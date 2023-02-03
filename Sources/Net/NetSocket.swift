@@ -59,8 +59,8 @@ open class NetSocket: NSObject {
     private lazy var outputBuffer: DataBuffer = .init(capacity: outputBufferSize)
     private lazy var outputQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.NetSocket.output", qos: qualityOfService)
 
-    var inputStreamError: Error? = nil
-    var outputStreamError: Error? = nil
+    public var inputStreamError: Error? = nil
+    public var outputStreamError: Error? = nil
     
     deinit {
         inputStream?.delegate = nil

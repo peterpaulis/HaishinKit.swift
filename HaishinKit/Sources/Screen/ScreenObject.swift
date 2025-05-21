@@ -283,20 +283,26 @@ public final class VideoTrackScreenObject: ScreenObject, ChromaKeyProcessable {
               let pixelBuffer = sampleBuffer.imageBuffer else {
             return nil
         }
+
         frameTracker.update(sampleBuffer.presentationTimeStamp)
-        // Resizing before applying the filter for performance optimization.
-        var image = CIImage(cvPixelBuffer: pixelBuffer).transformed(by: videoGravity.scale(
-            bounds.size,
-            image: pixelBuffer.size
-        ))
-        if effects.isEmpty {
-            return renderer.context.createCGImage(image, from: videoGravity.region(bounds, image: image.extent))
-        } else {
+
+        var image = CIImage(cvPixelBuffer: pixelBuffer)
+            .transformed(by: videoGravity.scale(bounds.size, image: pixelBuffer.size))
+            
+        if !effects.isEmpty {
+            image = CIImage(image: UIImage(ciImage: image)) ?? image
             for effect in effects {
-                image = effect.execute(image)
+                let adjustedImage = effect.execute(image)
+                image = CIImage(image: UIImage(ciImage: adjustedImage)) ?? adjustedImage
             }
-            return renderer.context.createCGImage(image, from: videoGravity.region(bounds, image: image.extent))
         }
+
+        let region = videoGravity.region(bounds, image: image.extent)
+        guard let cgImage = renderer.context.createCGImage(image, from: region) else {
+            return nil
+        }
+
+        return cgImage
     }
 
     override public func makeBounds(_ size: CGSize) -> CGRect {
@@ -516,7 +522,7 @@ public final class AssetScreenObject: ScreenObject, ChromaKeyProcessable {
         let image = CIImage(cvPixelBuffer: pixelBuffer).transformed(by: videoGravity.scale(
             bounds.size,
             image: pixelBuffer.size
-        ))
+        )).copy() as! CIImage
         return renderer.context.createCGImage(image, from: videoGravity.region(bounds, image: image.extent))
     }
 

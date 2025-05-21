@@ -122,11 +122,30 @@ public final class Screen: ScreenObjectContainerConvertible {
         defer {
             targetTimestamp = updateFrame.targetTimestamp
         }
-        var pixelBuffer: CVPixelBuffer?
-        pixelBufferPool?.createPixelBuffer(&pixelBuffer)
-        guard let pixelBuffer else {
+
+        // Calculate presentation timestamp
+        let presentationTimeStamp = CMTime(
+            seconds: updateFrame.timestamp - videoCaptureLatency,
+            preferredTimescale: Self.preferredTimescale
+        )
+
+        // Frame is too early or out of order — skip
+        if self.presentationTimeStamp > presentationTimeStamp {
             return nil
         }
+
+        // Prevent negative or zero durations
+        let rawDuration = updateFrame.targetTimestamp - updateFrame.timestamp
+        let safeDuration = max(rawDuration, 1.0 / Double(Self.preferredTimescale))
+
+        // Create pixel buffer
+        var pixelBuffer: CVPixelBuffer?
+        let result = pixelBufferPool?.createPixelBuffer(&pixelBuffer)
+        guard result == kCVReturnSuccess, let pixelBuffer else {
+            return nil
+        }
+
+        // Setup format description if needed
         if outputFormat == nil {
             CMVideoFormatDescriptionCreateForImageBuffer(
                 allocator: kCFAllocatorDefault,
@@ -137,34 +156,36 @@ public final class Screen: ScreenObjectContainerConvertible {
         guard let outputFormat else {
             return nil
         }
+
+        // Propagate buffer attachments
         if let dictionary = CVBufferGetAttachments(pixelBuffer, .shouldNotPropagate) {
             CVBufferSetAttachments(pixelBuffer, dictionary, .shouldPropagate)
         }
-        let presentationTimeStamp = CMTime(seconds: updateFrame.timestamp - videoCaptureLatency, preferredTimescale: Self.preferredTimescale)
-        guard self.presentationTimeStamp <= presentationTimeStamp else {
-            return nil
-        }
+
+        // Store the timestamp after we commit to rendering
         self.presentationTimeStamp = presentationTimeStamp
+
+        // Create sample timing info
         var timingInfo = CMSampleTimingInfo(
-            duration: CMTime(seconds: updateFrame.targetTimestamp - updateFrame.timestamp, preferredTimescale: Self.preferredTimescale),
+            duration: CMTime(seconds: safeDuration, preferredTimescale: Self.preferredTimescale),
             presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid
         )
+
         var sampleBuffer: CMSampleBuffer?
-        guard CMSampleBufferCreateReadyWithImageBuffer(
+        let status = CMSampleBufferCreateReadyWithImageBuffer(
             allocator: kCFAllocatorDefault,
             imageBuffer: pixelBuffer,
             formatDescription: outputFormat,
             sampleTiming: &timingInfo,
             sampleBufferOut: &sampleBuffer
-        ) == noErr else {
+        )
+
+        guard status == noErr, let buffer = sampleBuffer else {
             return nil
         }
-        if let sampleBuffer {
-            return render(sampleBuffer)
-        } else {
-            return nil
-        }
+
+        return render(buffer)
     }
 
     func render(_ sampleBuffer: CMSampleBuffer) -> CMSampleBuffer {

@@ -7,6 +7,9 @@ import UIKit
 
 /// An actor that mixies audio and video for streaming.
 public final actor MediaMixer {
+    
+    private var lastRenderedTimestamp: CMTime = .zero
+    
     static let defaultFrameRate: Float64 = 30
 
     /// The error domain codes.
@@ -365,6 +368,15 @@ public final actor MediaMixer {
                 displayLink.preferredFramesPerSecond = await Int(frameRate)
                 displayLink.startRunning()
                 for await updateFrame in displayLink.updateFrames {
+                    
+                    let lateness = updateFrame.timestamp - updateFrame.targetTimestamp
+
+                    // Skip frame if it's more than, say, 1 frame late
+                    let frameInterval = 1.0 / Double(displayLink.preferredFramesPerSecond)
+                    if -lateness > frameInterval {
+                        continue
+                    }
+                    
                     guard let buffer = screen.makeSampleBuffer(updateFrame) else {
                         continue
                     }
@@ -433,10 +445,22 @@ extension MediaMixer: AsyncRunner {
             return
         }
         isRunning = true
+        lastRenderedTimestamp = .zero
         Task {
             for await inputs in videoIO.inputs {
+                let sampleBuffer = inputs.1
+                
+                let frameTimestamp = sampleBuffer.presentationTimeStamp
+
+                // Drop frame if it's older than the last rendered one
+                if await frameTimestamp < lastRenderedTimestamp {
+                    continue
+                }
+                lastRenderedTimestamp = frameTimestamp
+                
                 Task { @ScreenActor in
                     let sampleBuffer = inputs.1
+                    
                     screen.append(inputs.0, buffer: sampleBuffer)
                     if await videoMixerSettings.mainTrack == inputs.0 && 0 < screen.targetTimestamp {
                         let diff = ceil((screen.targetTimestamp - sampleBuffer.presentationTimeStamp.seconds) * 10000) / 10000

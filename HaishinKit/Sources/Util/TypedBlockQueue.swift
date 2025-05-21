@@ -49,17 +49,26 @@ final class TypedBlockQueue<T: AnyObject> {
 
 extension TypedBlockQueue where T == CMSampleBuffer {
     func dequeue(_ presentationTimeStamp: CMTime) -> CMSampleBuffer? {
-        var result: CMSampleBuffer?
+        var best: CMSampleBuffer? = nil
+        let tolerance = CMTimeMake(value: 1, timescale: 10) // ~1/10 s
+        var maxDif = CMTimeMake(value: 0, timescale: 1)
         while !queue.isEmpty {
-            guard let head else {
-                break
+            guard let head else { break }
+            if !head.isValid {
+                _ = dequeue()
+                continue
             }
             if head.presentationTimeStamp <= presentationTimeStamp {
-                result = dequeue()
+                if presentationTimeStamp - head.presentationTimeStamp <= tolerance {
+                    best = dequeue() // Fresh enough
+                } else {
+                    _ = dequeue() // Too old, discard
+                }
             } else {
-                return result
+                break
             }
         }
-        return result
+        
+        return best
     }
 }

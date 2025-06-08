@@ -2,7 +2,7 @@ import Accelerate
 import AVFoundation
 
 extension AVAudioPCMBuffer {
-    final func makeSampleBuffer(_ when: AVAudioTime) -> CMSampleBuffer? {
+    final public func makeSampleBuffer(_ when: AVAudioTime) -> CMSampleBuffer? {
         var status: OSStatus = noErr
         var sampleBuffer: CMSampleBuffer?
         status = CMAudioSampleBufferCreateWithPacketDescriptions(

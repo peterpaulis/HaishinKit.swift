@@ -15,14 +15,18 @@ soe/bin/*
 soe/air/*
 soe/AIR_readme.txt
 
-Cartfile.resolved
 Carthage/*
 
 .idea/
+.vscode/
+.swiftpm/
 
-Package.resolved
-HaishinKit.xcodeproj/project.xcworkspace/xcuserdata/shogo.xcuserdatad/WorkspaceSettings.xcsettings
 *.xcsettings
 docs/undocumented.json
 fastlane/report.xml
 docs/docsets/HaishinKit.docset/Contents/Resources/Documents/undocumented.json
+HaishinKit.json
+SRTHaishinKit.json
+SRTHaishinKit/Vendor/SRT/OpenSSL/
+SRTHaishinKit/Vendor/SRT/srt/
+SRTHaishinKit/Vendor/SRT/Includes/

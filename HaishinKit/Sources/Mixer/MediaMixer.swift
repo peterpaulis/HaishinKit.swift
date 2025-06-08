@@ -450,8 +450,15 @@ extension MediaMixer: AsyncRunner {
         }
         Task {
             for await video in videoIO.output {
+                
+                let sampleBuffer = SVBufferProcessor.current?.process(sampleBuffer: video) ?? (mainSampleBuffer: video, previewSampleBuffer: video)
+                
                 for output in outputs where await output.videoTrackId == UInt8.max {
-                    output.mixer(self, didOutput: video)
+                    if output is MTHKView || output is PiPHKView {
+                        output.mixer(self, didOutput: sampleBuffer.previewSampleBuffer)
+                    } else {
+                        output.mixer(self, didOutput: sampleBuffer.mainSampleBuffer)
+                    }
                 }
             }
         }

@@ -210,11 +210,11 @@ public final actor RTMPSocket {
 
 extension RTMPSocket: NetworkTransportReporter {
     // MARK: NetworkTransportReporter
-    func makeNetworkMonitor() async -> NetworkMonitor {
+    public func makeNetworkMonitor() async -> NetworkMonitor {
         return .init(self)
     }
 
-    func makeNetworkTransportReport() -> NetworkTransportReport {
+    public func makeNetworkTransportReport() -> NetworkTransportReport {
         return .init(queueBytesOut: queueBytesOut, totalBytesIn: totalBytesIn, totalBytesOut: totalBytesOut)
     }
 }

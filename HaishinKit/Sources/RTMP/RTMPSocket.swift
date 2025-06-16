@@ -1,10 +1,10 @@
 import Foundation
 import Network
 
-final actor RTMPSocket {
+public final actor RTMPSocket {
     static let defaultWindowSizeC = Int(UInt8.max)
 
-    enum Error: Swift.Error {
+    public enum Error: Swift.Error {
         case invalidState
         case endOfStream
         case connectionTimedOut

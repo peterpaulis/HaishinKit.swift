@@ -85,12 +85,12 @@ public final class StreamScreenObject: ScreenObject, ChromaKeyProcessable {
     }
 }
 
-extension StreamScreenObject: HKStreamOutput {
+extension StreamScreenObject: StreamOutput {
     // MARK: HKStreamOutput
-    nonisolated public func stream(_ stream: some HKStream, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
+    nonisolated public func stream(_ stream: some StreamConvertible, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
     }
 
-    nonisolated public func stream(_ stream: some HKStream, didOutput video: CMSampleBuffer) {
+    nonisolated public func stream(_ stream: some StreamConvertible, didOutput video: CMSampleBuffer) {
         Task { @ScreenActor in
             self.sampleBuffer = video
         }

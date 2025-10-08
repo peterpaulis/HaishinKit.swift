@@ -14,6 +14,8 @@ public protocol ScreenRenderer: AnyObject {
     var bounds: CGRect { get }
     /// The current presentationTimeStamp.
     var presentationTimeStamp: CMTime { get }
+    /// The current session synchronization clock.
+    var synchronizationClock: CMClock? { get set }
     /// Layouts a screen object.
     func layout(_ screenObject: ScreenObject)
     /// Draws a sceen object.
@@ -27,6 +29,7 @@ final class ScreenRendererByCPU: ScreenRenderer {
     static let doNotTile = vImage_Flags(kvImageDoNotTile)
 
     var bounds: CGRect = .init(origin: .zero, size: Screen.size)
+    var synchronizationClock: CMClock?
     var presentationTimeStamp: CMTime = .zero
 
     lazy var context = {
